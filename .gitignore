@@ -1,0 +1,12 @@
+# Snap build artefacts
+*.snap
+*.comp
+parts/
+prime/
+stage/
+
+# Model weight files
+*.gguf
+
+# Dev tools
+dev/

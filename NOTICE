@@ -1,0 +1,7 @@
+Gemma is provided under and subject to the Gemma Terms of Use found at ai.google.dev/gemma/terms
+
+A copy of the Gemma Terms of Use is included herein and can be found in the LICENSE-gemma.md file.
+
+The snap packaging code is licensed separately under the terms specified in the LICENSE file.
+
+All artifacts and dependencies included within this snap package are subject to their respective licenses, which are documented and available at /snap/<snap-name>/current/usr/share/doc within the installed snap package.

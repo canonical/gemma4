@@ -1,0 +1,206 @@
+name: gemma4
+base: core24
+summary: Inference Snap for Gemma 4 E4B
+description: |
+  This is an inference snap that lets you run Gemma 4 E4B (Efficient 4B), a
+  multimodal instruction-tuned model from Google with vision capabilities.
+
+adopt-info: version
+
+grade: stable
+confinement: strict
+compression: lzo
+
+environment:
+  SNAP_COMPONENTS: /snap/$SNAP_INSTANCE_NAME/components/$SNAP_REVISION
+  ARCH_TRIPLET: $CRAFT_ARCH_TRIPLET_BUILD_FOR
+
+plugs:
+  # To allow side-loading models into server (root daemon) from user home directory
+  home:
+    read: all
+
+hooks:
+  install:
+    plugs:
+      - hardware-observe
+      - opengl
+
+parts:
+  version:
+    plugin: dump
+    source: .
+    build-packages:
+      - git-lfs
+    override-pull: |
+      craftctl set version="v4+$(git -C $SNAPCRAFT_PROJECT_DIR describe --always)"
+
+  cli:
+    source:
+      - on amd64: https://github.com/canonical/inference-snaps-cli/releases/download/v1.0.0-beta.42/inference-snaps-cli-linux-amd64.tar.xz
+      - on arm64: https://github.com/canonical/inference-snaps-cli/releases/download/v1.0.0-beta.42/inference-snaps-cli-linux-arm64.tar.xz
+    plugin: dump
+    override-build: |
+      mkdir -p bin
+      mv cli bin/modelctl
+
+      # For tab completion
+      ln --symbolic ./modelctl bin/gemma4
+
+      craftctl default
+    stage-packages:
+      - pciutils # lspci
+      - nvidia-utils-580 # nvidia-smi, used for NVIDIA vRAM and CUDA Capability detection
+
+  engines:
+    source: engines
+    plugin: dump
+    organize:
+      "*": engines/
+  
+  scripts:
+    source: scripts
+    plugin: dump
+    stage-packages:
+      - jq
+    organize:
+      "server.sh": bin/
+      "completion.bash": bin/
+
+  model-e4b-q4-k-m-gguf:
+    plugin: nil
+    override-prime: |
+      set +x # reduce noise
+
+      # Bypassing the usual part lifecycle saves disk space and time when dealing with large files
+      # Copy model files directly from the project into the component's prime directory
+      target="CRAFT_COMPONENT_MODEL_E4B_Q4_K_M_GGUF_PRIME"
+      source="$CRAFT_PROJECT_DIR/components/model-e4b-q4-k-m-gguf"
+
+      cp -v "$source/gemma-4-E4B-it-Q4_K_M.gguf" "${!target}/"
+
+      # Copy any other non-gguf files (component.yaml, README.md, etc.)
+      for f in "$source"/*; do
+        if [ -f "$f" ]; then
+          case "$f" in
+            *.gguf) ;;
+            *) cp -v "$f" "${!target}/" ;;
+          esac
+        fi
+      done
+
+  mmproj-e4b-q8-0-gguf:
+    plugin: nil
+    override-prime: |
+      set +x # reduce noise
+
+      target="CRAFT_COMPONENT_MMPROJ_E4B_Q8_0_GGUF_PRIME"
+      source="$CRAFT_PROJECT_DIR/components/mmproj-e4b-q8-0-gguf"
+
+      cp -v "$source/mmproj-gemma-4-E4B-it-Q8_0.gguf" "${!target}/"
+
+      # Copy any other non-gguf files (component.yaml, README.md, etc.)
+      for f in "$source"/*; do
+        if [ -f "$f" ]; then
+          case "$f" in
+            *.gguf) ;;
+            *) cp -v "$f" "${!target}/" ;;
+          esac
+        fi
+      done
+
+  llama-cpp:
+    plugin: dump
+    source: 
+      - on amd64: https://github.com/canonical/llama.cpp-builds/releases/download/b8893/llamacpp-amd64.tar.gz
+      - on arm64: https://github.com/canonical/llama.cpp-builds/releases/download/b8893/llamacpp-arm64.tar.gz
+    override-build: |
+      # Move license files to be included in the snap, not the component
+      mkdir -p $CRAFT_PRIME/usr/share/doc/
+      mv licenses $CRAFT_PRIME/usr/share/doc/llama.cpp
+
+      craftctl default
+    stage-packages:
+      - libgomp1
+    organize:
+      "*": (component/llama-cpp)
+  
+  llama-cpp-local-files:
+    plugin: dump
+    source: components/llama-cpp
+    organize:
+      "*": (component/llama-cpp)
+    
+  llama-cpp-cuda:
+    plugin: dump
+    source: 
+      - on amd64: https://github.com/canonical/llama.cpp-builds/releases/download/b8893/llamacpp-amd64+cuda12.tar.gz
+      - on arm64: https://github.com/canonical/llama.cpp-builds/releases/download/b8893/llamacpp-arm64+cuda12.tar.gz
+    override-build: |
+      # Move license files to be included in the snap, not the component
+      mkdir -p $CRAFT_PRIME/usr/share/doc/
+      mv licenses $CRAFT_PRIME/usr/share/doc/llama.cpp-cuda
+
+      craftctl default
+    stage-packages:
+      - libgomp1
+    organize:
+      "*": (component/llama-cpp-cuda)
+
+  llama-cpp-cuda-local-files:
+    plugin: dump
+    source: components/llama-cpp-cuda
+    organize:
+      "*": (component/llama-cpp-cuda)
+
+  notice:
+    plugin: nil
+    source: NOTICE
+    source-type: file
+    override-build: |
+      license_dir=$CRAFT_PART_INSTALL/usr/share/doc
+      mkdir -p $license_dir
+      cp NOTICE $license_dir/
+      cp $SNAPCRAFT_PROJECT_DIR/LICENSE $license_dir/
+      cp $SNAPCRAFT_PROJECT_DIR/LICENSE-gemma $license_dir/
+
+components:
+  model-e4b-q4-k-m-gguf:
+    type: standard
+    summary: Google Gemma 4 E4B Q4_K_M GGUF
+    description: Model weights for Google Gemma 4 E4B (Efficient 4B) in GGUF format
+
+  mmproj-e4b-q8-0-gguf:
+    type: standard
+    summary: Google Gemma 4 E4B multimodal projector Q8_0 GGUF
+    description: Multimodal projector weights for Google Gemma 4 E4B vision support in GGUF format
+
+  llama-cpp:
+    type: standard
+    summary: llama.cpp using default CPU instruction sets
+    description: LLM inference in C/C++
+  
+  llama-cpp-cuda:
+    type: standard
+    summary: llama.cpp with CUDA backend
+    description: LLM inference in C/C++
+
+apps:
+  gemma4:
+    command: bin/gemma4
+    completer: bin/completion.bash
+    plugs:
+      - hardware-observe
+      - opengl
+      - network
+    environment:
+      ADDITIONAL_FEATURES: chat
+
+  server:
+    command: bin/server.sh
+    daemon: simple
+    plugs:
+      - network-bind
+      - hardware-observe
+      - opengl
+      - home

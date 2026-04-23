@@ -1,0 +1,37 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "git-submodules": {
+    "enabled": true
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update inference-snaps-cli",
+      "fileMatch": [
+        "^snap/snapcraft\\.yaml$"
+      ],
+      "matchStrings": [
+        "https://github\\.com/canonical/inference-snaps-cli/releases/download/(?<currentValue>v[^/]+)/inference-snaps-cli"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "canonical/inference-snaps-cli",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "Update llama.cpp builds",
+      "fileMatch": [
+        "^snap/snapcraft\\.yaml$"
+      ],
+      "matchStrings": [
+        "https://github\\.com/canonical/llama\\.cpp-builds/releases/download/(?<currentValue>[^/]+)/llamacpp"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "canonical/llama.cpp-builds",
+      "versioningTemplate": "regex:^b(?<major>\\d+)$"
+    }
+  ]
+}
