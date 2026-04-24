@@ -18,4 +18,4 @@ jobs:
       init-build-script: 'download-models.sh'
       publish-channel: 'latest/edge' # Add track if needed, e.g., 24/latest/edge
     secrets:
-      store-credentials: ${{ secrets.STORE_LOGIN }}
+      store-credentials: ${{ secrets.STORE_LOGIN_MAIN }}
