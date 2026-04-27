@@ -68,3 +68,4 @@ jobs:
       expected-tps: ${{ matrix.jobs.expected-tps }}
 
       test-image-prompt: ${{ matrix.jobs.test-image-prompt == true }}
+      dev-mode: ${{ matrix.jobs.dev-mode == true }}
