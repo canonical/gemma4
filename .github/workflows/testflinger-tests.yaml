@@ -26,6 +26,7 @@ jobs:
             select-engine: cpu
             test-chat-tps: true
             test-image-prompt: true
+            dev-mode: true
 
           - job-queue: anbox-nvidia-amd64
             provision-data: "distro: noble"
@@ -34,6 +35,7 @@ jobs:
             test-chat-tps: true
             expected-tps: 10
             test-image-prompt: true
+            dev-mode: true
 
           # Skip nvidia-gpu-arm64 engine as we do not have a test machine for it
 
@@ -44,6 +46,7 @@ jobs:
             test-chat-tps: true
             expected-tps: 10
             test-image-prompt: true
+            dev-mode: true
 
     uses: canonical/inference-snaps-testing/.github/workflows/test-snap.yaml@add-devmode
     secrets: inherit
