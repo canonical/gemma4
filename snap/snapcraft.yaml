@@ -35,6 +35,11 @@ environment:
   STATUS_SHARE: *status-share # Status directory shared via content interface
   OWUI_SHARE: *owui-share # Open WebUI config directory shared via content interface
 
+layout:
+  # Under wsl the libraries are expected in /usr/lib/wsl
+  /usr/lib/wsl:
+    bind: $SNAP_COMMON/usr/lib/wsl
+
 hooks:
   install:
     plugs: &install-plugs
@@ -55,8 +60,8 @@ parts:
 
   cli:
     source:
-      - on amd64: https://github.com/canonical/inference-snaps-cli/releases/download/v1.0.0-beta.44/inference-snaps-cli-linux-amd64.tar.xz
-      - on arm64: https://github.com/canonical/inference-snaps-cli/releases/download/v1.0.0-beta.44/inference-snaps-cli-linux-arm64.tar.xz
+      - on amd64: https://github.com/canonical/inference-snaps-cli/releases/download/v1.0.0-beta.45/inference-snaps-cli-linux-amd64.tar.xz
+      - on arm64: https://github.com/canonical/inference-snaps-cli/releases/download/v1.0.0-beta.45/inference-snaps-cli-linux-arm64.tar.xz
     plugin: dump
     override-build: |
       mkdir -p bin
