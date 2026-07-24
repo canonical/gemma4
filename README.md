@@ -18,6 +18,7 @@ multimodal instruction-tuned model with vision capabilities.
 Clone the repo:
 ```shell
 git clone https://github.com/canonical/gemma4-snap
+cd gemma4-snap
 ```
 
 Initialize the development environment:
