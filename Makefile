@@ -84,4 +84,5 @@ download-model-e4b-ov:
 	@echo "Downloading Gemma 4 E4B OpenVINO model weights..."
 	$(hf) download OpenVINO/gemma-4-E4B-it-int4-ov \
 		--local-dir components/model-e4b-it-int4-ov/gemma4-e4b-it-int4-ov
+	@echo "OVMS writes graph.pbtxt at runtime; pointing it to /tmp because component files are read-only..."
 	ln -sf /tmp/graph.pbtxt ./components/model-e4b-it-int4-ov/gemma4-e4b-it-int4-ov/graph.pbtxt
