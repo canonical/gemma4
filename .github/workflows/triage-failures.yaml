@@ -11,6 +11,6 @@ permissions:
 
 jobs:
   triage:
-    uses: canonical/inference-snaps-dev/.github/workflows/reuse-triage-failures.yml@triage-failures
+    uses: canonical/inference-snaps-dev/.github/workflows/reuse-triage-failures.yml@v2
     with:
       workflow-run: "${{ toJson(github.event.workflow_run) }}"
