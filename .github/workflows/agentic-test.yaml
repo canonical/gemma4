@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run test
-        uses: canonical/inference-snaps-dev/.github/actions/agentic-test@agentic-test
+        uses: canonical/inference-snaps-dev/.github/actions/agentic-test@v2
         with:
           snap-name: gemma4
           snap-channel: beta
