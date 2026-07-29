@@ -1,23 +1,24 @@
 name: gemma4
-base: core24
-summary: Gemma 4 inference snap
+title: Gemma 4
+summary: Local AI with Gemma 4 inference snap
 description: |
-  This is an inference snap that lets you run Gemma 4, a multimodal
-  instruction-tuned model from Google with vision capabilities.
-  
-  Before you start, make sure to have the necessary drivers installed on the host:
-  https://documentation.ubuntu.com/inference-snaps/how-to/install-drivers/
-  
+  Quickly install an optimized environment for local inference with Gemma 4.
+
+  Gemma 4 a multimodal instruction-tuned model from Google with text generation, reasoning, and vision capabilities.
+
   **Install:**
-  
+
   `sudo snap install gemma4`
-  
-  **Get help:**
-  
-  `gemma4 --help`
-  
-  **Licensing:**
-  
+
+  **Run:**
+
+  `gemma4`
+
+  Additional drivers are required for some accelerators:
+  https://documentation.ubuntu.com/inference-snaps/how-to/setup/drivers/
+
+  **License:**
+
   The Gemma 4 model is provided by Google under the Apache 2.0 license:
   https://ai.google.dev/gemma/apache_2
 
@@ -29,6 +30,7 @@ issues: https://github.com/canonical/inference-snaps/issues
 
 adopt-info: version
 
+base: core24
 grade: stable
 confinement: strict
 compression: lzo
