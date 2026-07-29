@@ -1,6 +1,7 @@
 name: gemma4
 title: Gemma 4
 summary: Local AI with Gemma 4 inference snap
+icon: https://canonical.github.io/inference-snaps-admin/icons/gemma4/icon-256.png
 description: |
   Quickly install an optimized environment for local inference with Gemma 4.
 
