@@ -90,7 +90,7 @@ parts:
       ln --symbolic ./modelctl bin/gemma4
 
       craftctl default
-    
+
   cli-dependencies:
     plugin: nil
     stage-packages:
@@ -106,35 +106,78 @@ parts:
     override-build: |
       mkdir -p $CRAFT_PART_INSTALL/usr/bin
       cp /usr/bin/nvidia-smi $CRAFT_PART_INSTALL/usr/bin/
-      
+
       license_dir=$CRAFT_PART_INSTALL/usr/share/doc/nvidia-utils-580/
       mkdir -p $license_dir
       cp /usr/share/doc/nvidia-utils-580/copyright $license_dir/
 
-  # OpenCL ICD and libigdgmm are required for Intel GPU vRAM lookup with clinfo
+  # OpenCL ICD and libigdgmm are required for Intel GPU vRAM lookup with clinfo.
+  #
+  # DRIVER VERSION: "Latest" = Intel Compute Runtime 26.22.38646.4 (public GitHub
+  # release). The "Latest" driver here MUST match the one bundled by the
+  # intel-compute-runtime part, otherwise clinfo (host-side vRAM detection) and
+  # OVMS (inference) would use different Compute Runtime versions.
   cli-intel-opencl-icd:
     plugin: nil
     build-packages:
       - wget
     override-build: |
       if [ "$CRAFT_ARCH_BUILD_FOR" == "amd64" ]; then
-        # Legacy
+        # ==============================================================
+        # Legacy support ICD (compute-runtime 24.35.30872.36).
+        #
+        # COMPATIBILITY / CONFLICT NOTE:
+        #   Do NOT download the legacy libigdgmm12_22.5.0 into the same
+        #   directory as the latest libigdgmm12_22.10.0. `dpkg -i *.deb`
+        #   installs in glob (alphabetical) order and "22.10" < "22.5" in
+        #   ASCII, so 22.10.0 would install first and 22.5.0 would then
+        #   DOWNGRADE over it. The legacy ICD only requires libigdgmm12
+        #   (>= 22.5.0), so the latest 22.10.0 already satisfies it - we
+        #   ship gmmlib ONCE, at the latest version.
+        # ==============================================================
+        mkdir -p "$CRAFT_PART_BUILD/icd-legacy"
+        cd "$CRAFT_PART_BUILD/icd-legacy"
         wget -nv https://github.com/intel/compute-runtime/releases/download/24.35.30872.36/intel-opencl-icd-legacy1_24.35.30872.36_amd64.deb
-        wget -nv https://github.com/intel/compute-runtime/releases/download/24.35.30872.36/libigdgmm12_22.5.0_amd64.deb
-      
-        # Latest
+
+        # ==============================================================
+        # Latest ICD + gmmlib (compute-runtime 26.22.38646.4).
+        # gmmlib 22.10.0 is installed here ONCE and satisfies both the
+        # legacy and the latest ICD.
+        # ==============================================================
+        mkdir -p "$CRAFT_PART_BUILD/icd-latest"
+        cd "$CRAFT_PART_BUILD/icd-latest"
         wget -nv https://github.com/intel/compute-runtime/releases/download/26.22.38646.4/intel-opencl-icd_26.22.38646.4-0_amd64.deb
         wget -nv https://github.com/intel/compute-runtime/releases/download/26.22.38646.4/libigdgmm12_22.10.0_amd64.deb
-      
-        dpkg --root=$CRAFT_PART_INSTALL --force-all -i *.deb
-      
-        # Two symlinks are created when installing intel-opencl-icd-legacy: 
-        # etc/alternatives/ocloc -> /usr/bin/ocloc-24.35.0, usr/bin/ocloc -> /etc/alternatives/ocloc
-        # These point to outside of the snap and fails store review. They are not required, so remove it.
-        rm $CRAFT_PART_INSTALL/etc/alternatives/ocloc
-        rm $CRAFT_PART_INSTALL/usr/bin/ocloc
+
+        # Install legacy FIRST, then latest, so the latest libraries win any
+        # file-level overlaps. Separate directories + two dpkg calls keep the
+        # ordering explicit (never rely on *.deb glob order across versions).
+        dpkg --root="$CRAFT_PART_INSTALL" --force-all -i "$CRAFT_PART_BUILD/icd-legacy"/*.deb
+        dpkg --root="$CRAFT_PART_INSTALL" --force-all -i "$CRAFT_PART_BUILD/icd-latest"/*.deb
+
+        # If a driver generation drops IGC libraries (libigc/libigdfcl/libiga64)
+        # into /usr/local/lib, that path is NOT on the snap's loader path (only
+        # /usr/lib/$ARCH_TRIPLET is). Move them so NEO can link them at runtime.
+        arch_libdir="$CRAFT_PART_INSTALL/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR"
+        if [ -d "$CRAFT_PART_INSTALL/usr/local/lib" ]; then
+          mkdir -p "$arch_libdir"
+          mv -n "$CRAFT_PART_INSTALL"/usr/local/lib/lib*.so* "$arch_libdir"/ 2>/dev/null || true
+          rmdir "$CRAFT_PART_INSTALL"/usr/local/lib 2>/dev/null || true
+        fi
+
+        # Installing the ICD may create an absolute etc/alternatives/ocloc
+        # symlink (-> /usr/bin/ocloc-<ver>) that points outside the snap and
+        # fails store review. Drop ONLY that symlink; keep the real ocloc binary
+        # (NEO/IGC need ocloc at runtime) and repoint usr/bin/ocloc with a
+        # RELATIVE link that stays inside the snap.
+        rm -f "$CRAFT_PART_INSTALL/etc/alternatives/ocloc"
+        ocloc_real="$(ls "$CRAFT_PART_INSTALL"/usr/bin/ocloc-* 2>/dev/null | head -n1 || true)"
+        if [ -n "$ocloc_real" ]; then
+          rm -f "$CRAFT_PART_INSTALL/usr/bin/ocloc"
+          ln -sf "$(basename "$ocloc_real")" "$CRAFT_PART_INSTALL/usr/bin/ocloc"
+        fi
       fi
-      
+
       craftctl default
 
   webui:
@@ -160,7 +203,7 @@ parts:
     plugin: dump
     organize:
       "*": runtimes/
-  
+
   scripts:
     source: scripts
     plugin: dump
@@ -207,6 +250,9 @@ parts:
     override-prime: *amd64-only
 
   # For Intel GPU usage, amd64 only
+  #
+  # DRIVER VERSION: "Latest" = Intel Compute Runtime 26.22.38646.4 + matching
+  # IGC 2.36.3. This MUST match the cli-intel-opencl-icd part's 26.22 driver.
   intel-compute-runtime:
     plugin: nil
     build-packages:
@@ -216,28 +262,47 @@ parts:
           - ocl-icd-libopencl1
     override-build: |
       if [ "$CRAFT_ARCH_BUILD_FOR" == "amd64" ]; then
-        # First install the legacy support version. Then install the latest, so that latest can override any old libraries.
-      
-        # Legacy: https://github.com/intel/compute-runtime/releases/tag/24.35.30872.36
-        mkdir -p $CRAFT_PART_BUILD/opencl-intel-legacy1
-        cd $CRAFT_PART_BUILD/opencl-intel-legacy1
+        # ==============================================================
+        # Legacy compute stack (compute-runtime 24.35.30872.36 + IGC 1.0.x).
+        # Installed FIRST so the latest can override any older libraries.
+        # ==============================================================
+        mkdir -p "$CRAFT_PART_BUILD/opencl-intel-legacy1"
+        cd "$CRAFT_PART_BUILD/opencl-intel-legacy1"
         wget -nv https://github.com/intel/intel-graphics-compiler/releases/download/igc-1.0.17537.24/intel-igc-core_1.0.17537.24_amd64.deb
         wget -nv https://github.com/intel/intel-graphics-compiler/releases/download/igc-1.0.17537.24/intel-igc-opencl_1.0.17537.24_amd64.deb
         wget -nv https://github.com/intel/compute-runtime/releases/download/24.35.30872.36/intel-level-zero-gpu-legacy1_1.5.30872.36_amd64.deb
-        dpkg --root=$CRAFT_PART_INSTALL --force-all -i *.deb
-      
-        # Latest: https://github.com/intel/compute-runtime/releases/tag/26.22.38646.4
-        mkdir -p $CRAFT_PART_BUILD/opencl-intel
-        cd $CRAFT_PART_BUILD/opencl-intel
+        dpkg --root="$CRAFT_PART_INSTALL" --force-all -i *.deb
+
+        # ==============================================================
+        # Latest compute stack (compute-runtime 26.22.38646.4 + IGC 2.36.3).
+        #
+        # COMPATIBILITY NOTE: the "-2" IGC packages (intel-igc-core-2 /
+        # intel-igc-opencl-2) are a NEW package generation that co-installs
+        # alongside the legacy "intel-igc-core" / "intel-igc-opencl" (different
+        # package names, no conflict). intel-ocloc 26.22 and libze-intel-gpu1
+        # 26.22 must come from the SAME 26.22 release as the ICD in the
+        # cli-intel-opencl-icd part.
+        # ==============================================================
+        mkdir -p "$CRAFT_PART_BUILD/opencl-intel"
+        cd "$CRAFT_PART_BUILD/opencl-intel"
         wget -nv https://github.com/intel/intel-graphics-compiler/releases/download/v2.36.3/intel-igc-core-2_2.36.3+21719_amd64.deb
         wget -nv https://github.com/intel/intel-graphics-compiler/releases/download/v2.36.3/intel-igc-opencl-2_2.36.3+21719_amd64.deb
         wget -nv https://github.com/intel/compute-runtime/releases/download/26.22.38646.4/intel-ocloc_26.22.38646.4-0_amd64.deb
         wget -nv https://github.com/intel/compute-runtime/releases/download/26.22.38646.4/libze-intel-gpu1_26.22.38646.4-0_amd64.deb
-        dpkg --root=$CRAFT_PART_INSTALL --force-all -i *.deb
-      
-        cd $CRAFT_PART_BUILD
+        dpkg --root="$CRAFT_PART_INSTALL" --force-all -i *.deb
+
+        # Same IGC-libdir safeguard as the cli-intel-opencl-icd part: move any
+        # IGC .so from /usr/local/lib onto the snap's loader path.
+        arch_libdir="$CRAFT_PART_INSTALL/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR"
+        if [ -d "$CRAFT_PART_INSTALL/usr/local/lib" ]; then
+          mkdir -p "$arch_libdir"
+          mv -n "$CRAFT_PART_INSTALL"/usr/local/lib/lib*.so* "$arch_libdir"/ 2>/dev/null || true
+          rmdir "$CRAFT_PART_INSTALL"/usr/local/lib 2>/dev/null || true
+        fi
+
+        cd "$CRAFT_PART_BUILD"
       fi # End of Intel Compute Runtime installation
-      
+
       craftctl default
     organize:
       # move everything, including the staged packages
