@@ -7,7 +7,7 @@ SNAP_NAME ?= gemma4
 ENGINE ?= cpu
 
 .PHONY: all help init init-submodules install-deps download-models \
-	download-model-e2b download-model-e4b download-model-26b-a4b download-model-e4b-ov \
+	download-model-e2b download-model-e4b download-model-12b download-model-26b-a4b download-model-e4b-ov \
 	build install upload smoke-test
 
 all: help
