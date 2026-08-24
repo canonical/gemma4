@@ -7,7 +7,8 @@ SNAP_NAME ?= gemma4
 ENGINE ?= cpu
 
 .PHONY: all help init init-submodules install-deps download-models \
-	download-model-e2b download-model-e4b download-model-12b download-model-26b-a4b download-model-e4b-ov \
+	download-model-e2b download-model-e4b download-model-12b download-model-12b-qat \
+	download-model-26b-a4b download-model-e4b-ov \
 	build install upload smoke-test
 
 all: help
@@ -57,7 +58,7 @@ init-submodules:
 		git submodule update --init; \
 	fi
 
-download-models: download-model-e2b download-model-e4b download-model-12b download-model-26b-a4b download-model-e4b-ov
+download-models: download-model-e2b download-model-e4b download-model-12b download-model-12b-qat download-model-26b-a4b download-model-e4b-ov
 
 download-model-e2b:
 	@echo "Downloading Gemma 4 E2B model weights..."
@@ -79,6 +80,13 @@ download-model-12b:
 		--local-dir components/model-12b-q4-k-m-gguf
 	$(hf) download unsloth/gemma-4-12b-it-GGUF mmproj-BF16.gguf \
 		--local-dir components/mmproj-12b-bf16-gguf/
+
+download-model-12b-qat:
+	@echo "Downloading Gemma 4 12B QAT model weights..."
+	$(hf) download inference-snaps/gemma-4-12B-it-qat-UD-Q4_K_XL-5GB \
+		--local-dir components/model-12b-qat-q4-k-xl-gguf
+	$(hf) download unsloth/gemma-4-12B-it-qat-GGUF mmproj-BF16.gguf \
+		--local-dir components/mmproj-12b-qat-bf16-gguf/
 
 download-model-26b-a4b:
 	@echo "Downloading Gemma 4 26B A4B model weights..."
