@@ -20,6 +20,7 @@ model:
   default: gemma4-e4b
   options:
     - gemma4-e2b
+    - gemma4-e2b-qat
     - gemma4-e4b
     - gemma4-e4b-qat
     - gemma4-12b
