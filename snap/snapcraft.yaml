@@ -282,16 +282,11 @@ parts:
       "licenses": usr/share/doc/llama.cpp+hexagon # Add licenses to the snap
       "*": (component/llamacpp-hexagon)
     # Do not download or stage the ARM64-only artifact on other architectures.
-    override-pull: |
-      if [ "$CRAFT_ARCH_BUILD_FOR" != "arm64" ]; then
-        exit 0
-      fi
-      craftctl default
-    override-build: |
-      if [ "$CRAFT_ARCH_BUILD_FOR" != "arm64" ]; then
-        exit 0
-      fi
-      craftctl default
+    override-pull: &arm64-only |
+      [ "$CRAFT_ARCH_BUILD_FOR" == "arm64" ] && craftctl default || exit 0
+    override-build: *arm64-only
+    override-stage: *arm64-only
+    override-prime: *arm64-only
 
   llamacpp-cuda:
     plugin: dump
