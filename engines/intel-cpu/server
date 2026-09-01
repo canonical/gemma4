@@ -17,7 +17,7 @@ set -x
 ovms \
     --rest_port "$port" \
     --rest_bind_address "$host" \
-    --model_name "$MODEL_NAME" \
+    --model_name "$("$SNAP_NAME" status --format=json | jq -r '.model.name')" \
     --model_path "$MODEL_PATH" \
     --pipeline_type VLM \
     --task text_generation \

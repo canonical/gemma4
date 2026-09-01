@@ -1,5 +1,4 @@
 name: gemma4-e4b-ov
-alias: gemma4-e4b
 
 description: Gemma 4 E4B, a multimodal (text + vision) instruction-tuned model, optimized for OpenVINO
 model-card-url: https://huggingface.co/OpenVINO/gemma-4-E4B-it-int4-ov
@@ -20,7 +19,6 @@ components:
 environment:
   # The model is split across two components. The layout below flattens them
   # into a single directory via symlinks so OpenVINO Model Server can find all files.
-  - MODEL_NAME=gemma4-e4b-it-int4-ov
   - MODEL_DIR=/tmp/gemma4-e4b-it-int4-ov
   - MODEL_PATH=$MODEL_DIR
 
