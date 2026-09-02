@@ -18,7 +18,7 @@ permissions:
 jobs:
   build-test:
     name: ${{ github.event.label.name }}
-    uses: canonical/inference-snaps-dev/.github/workflows/reuse-pr-build-test.yaml@marangi-test-branch
+    uses: canonical/inference-snaps-dev/.github/workflows/reuse-pr-build-test.yaml@v2
     with:
       trigger-label: ${{ github.event.label.name }}
       pr-number: "${{ github.event.pull_request.number }}"
