@@ -2,7 +2,7 @@
 
 port="$(modelctl get http.port)"
 host="$(modelctl get http.host)"
-model_name=$("$SNAP_NAME" status --format=json | jq -r '.model.name')
+model_name=$("$SNAP_NAME" model --format=json | jq -r '.name')
 extra_args=()
 
 verbose="$(modelctl get verbose)"
