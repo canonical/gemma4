@@ -2,7 +2,7 @@
 
 port="$(modelctl get http.port)"
 host="$(modelctl get http.host)"
-
+model_name=$("$SNAP_NAME" status --format=json | jq -r '.model.name')
 extra_args=()
 
 verbose="$(modelctl get verbose)"
@@ -17,7 +17,7 @@ set -x
 ovms \
     --rest_port "$port" \
     --rest_bind_address "$host" \
-    --model_name "$("$SNAP_NAME" status --format=json | jq -r '.model.name')" \
+    --model_name "$model_name" \
     --model_path "$MODEL_PATH" \
     --pipeline_type VLM \
     --task text_generation \
