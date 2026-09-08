@@ -23,4 +23,4 @@ jobs:
       - name: Lint package
         # Temporary pin to the CLI commit that adds FastRPC domain matching.
         # Replace with the next canonical CLI release before merging.
-        uses: Sinan-Karakaya/inference-snaps-cli/.github/actions/lint-package@c21cbc9
+        uses: Sinan-Karakaya/inference-snaps-cli/.github/actions/lint-package@c21cbc91791e307de720925a73a1e793415b9335
