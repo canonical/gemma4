@@ -87,9 +87,13 @@ layout:
   # Under wsl the libraries are expected in /usr/lib/wsl
   /usr/lib/wsl:
     bind: $SNAP_COMMON/usr/lib/wsl
-  # FastRPC expects its machine configuration below this absolute path.
-  /usr/share/qcom:
-    bind: $SNAP/inference-npu-runtime-qcom-htp/usr/share/qcom
+  # FastRPC reads its machine configuration from the absolute /usr/share/qcom
+  # path. The runtime provider snap (qcom-htp-runtime) owns the layout bind for
+  # it; binding it here too would shadow the content-interface mount of the
+  # inference-npu-runtime-qcom-htp plug (snapd renames the content mount to
+  # avoid the clash, breaking the documented library path). Verified on
+  # Dragonwing RB4 (QCS8275): with the provider connected, the content target
+  # populates and libcdsprpc.so resolves from it.
 
 hooks:
   install:

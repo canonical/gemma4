@@ -11,9 +11,11 @@ environment:
   - LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SNAP_COMPONENTS/llamacpp-hexagon/lib
   - LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SNAP_COMPONENTS/llamacpp-hexagon/usr/lib/$ARCH_TRIPLET
   # The platform provider supplies libcdsprpc.so and its dependencies through
-  # the versioned Qualcomm Hexagon runtime content contract.
+  # the versioned Qualcomm Hexagon runtime content contract. The provider also
+  # ships the DSP skel binaries FastRPC loads by name via ADSP_LIBRARY_PATH
+  # (e.g. libggml-htp-v73.so for QCS8275); both trees are required.
   - LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SNAP/inference-npu-runtime-qcom-htp/lib
-  - ADSP_LIBRARY_PATH=$SNAP_COMPONENTS/llamacpp-hexagon/lib
+  - ADSP_LIBRARY_PATH=$SNAP_COMPONENTS/llamacpp-hexagon/lib:$SNAP/inference-npu-runtime-qcom-htp/usr/share/qcom
   - GGML_HEXAGON_DEVICES=HTP0
 
 components:
